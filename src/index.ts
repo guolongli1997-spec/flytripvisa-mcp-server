@@ -7,6 +7,7 @@ interface Env {
   GITHUB_TOKEN: string;
   MCP_ACCESS_TOKEN: string;
   GITHUB_REPOSITORY: string;
+  ASSETS: Fetcher;
 }
 
 const API = "https://api.github.com";
@@ -55,7 +56,12 @@ function decodeBase64(value: string) {
 
 function result(value: unknown) {
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify(value, null, 2),
+      },
+    ],
   };
 }
 
@@ -83,12 +89,14 @@ function createServer(env: Env) {
           `/repos/${repo}/contents/${path}?ref=${branch}`,
         );
 
-        const files = (Array.isArray(data) ? data : [data]).map((item: any) => ({
-          name: item.name,
-          path: item.path,
-          type: item.type,
-          sha: item.sha,
-        }));
+        const files = (Array.isArray(data) ? data : [data]).map(
+          (item: any) => ({
+            name: item.name,
+            path: item.path,
+            type: item.type,
+            sha: item.sha,
+          }),
+        );
 
         return result(files);
       } catch (error) {
@@ -136,8 +144,7 @@ function createServer(env: Env) {
   server.registerTool(
     "write_file",
     {
-      description:
-        "Create or update a file in the GitHub repository. Supply sha when updating an existing file.",
+      description: "Create or update a file in the GitHub repository. Supply sha when updating an existing file.",
       inputSchema: z.object({
         path: z.string().min(1),
         content: z.string(),
@@ -165,7 +172,6 @@ function createServer(env: Env) {
           success: true,
           path,
           commit: data.commit?.sha,
-          message: "GitHub file saved successfully.",
         });
       } catch (error) {
         return {
@@ -183,16 +189,8 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/" && request.method === "GET") {
-      return Response.json({
-        name: "FlyTripVisa GitHub MCP Server",
-        status: "online",
-        endpoint: "/mcp",
-      });
-    }
-
     if (url.pathname !== "/mcp") {
-      return new Response("Not Found", { status: 404 });
+      return env.ASSETS.fetch(request);
     }
 
     if (
@@ -201,7 +199,7 @@ export default {
       !env.GITHUB_REPOSITORY
     ) {
       return Response.json(
-        { error: "Server secrets or repository configuration missing." },
+        { error: "Server configuration missing." },
         { status: 500 },
       );
     }
