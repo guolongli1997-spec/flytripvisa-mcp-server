@@ -1,17 +1,16 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
+
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "flytripvisa-mcp-server",
-	"main": "src/index.ts",
-	"compatibility_date": "2026-07-02",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true,
-	},
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flytripvisa-mcp-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-02",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "GITHUB_REPOSITORY": "guolongli1997-spec/flytripvisa-mcp-server"
+  },
+  "observability": {
+    "enabled": true
+  }
 }
-"vars": {
-  "GITHUB_REPOSITORY": "guolongli1997-spec/flytripvisa-mcp-server"
-}, 
