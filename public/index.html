@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b0a">
+<title>FlyTripVisa AI Agent</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080b0a;color:#e9f3ed;font-family:Inter,Arial,sans-serif;height:100dvh;display:flex;flex-direction:column}
+header{height:65px;border-bottom:1px solid #1c2b23;display:flex;align-items:center;padding:0 18px;gap:12px}
+.logo{width:37px;height:37px;border-radius:12px;background:#07c160;color:#06130b;display:grid;place-items:center;font-weight:900;font-size:20px}
+.brand{font-size:16px;font-weight:700}
+.status{font-size:11px;color:#07c160;margin-top:4px}
+main{flex:1;overflow:auto;padding:22px 16px}
+.welcome{max-width:650px;margin:12vh auto 30px;text-align:center}
+.welcome h1{font-size:clamp(27px,6vw,42px);margin:12px 0}
+.welcome p{color:#91a69a;line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:24px}
+.chip{background:#101a14;border:1px solid #26382c;color:#b8cabe;border-radius:20px;padding:10px 14px;cursor:pointer}
+.messages{max-width:760px;margin:auto;display:flex;flex-direction:column;gap:16px}
+.msg{max-width:88%;padding:13px 16px;border-radius:15px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.user{align-self:flex-end;background:#075c35;color:white;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:#121c16;border:1px solid #26372c;border-bottom-left-radius:4px}
+.composer{padding:12px 14px 18px;border-top:1px solid #1c2b23;background:#090e0b}
+.inputbox{max-width:760px;margin:auto;display:flex;gap:10px;background:#111a14;border:1px solid #2a3b30;border-radius:17px;padding:9px}
+textarea{flex:1;resize:none;max-height:130px;min-height:42px;background:transparent;border:0;outline:0;color:white;padding:11px;font:inherit}
+button{border:0;cursor:pointer}
+#send{width:44px;height:44px;border-radius:13px;background:#07c160;color:#06130b;font-size:20px;font-weight:bold}
+#send:disabled{opacity:.4}
+.note{text-align:center;color:#65786b;font-size:11px;margin-top:10px}
+@media(min-width:700px){main{padding:28px}.composer{padding-bottom:22px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">F</div>
+  <div>
+    <div class="brand">FlyTripVisa AI Agent</div>
+    <div class="status">● AI Agent Interface</div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="welcome" id="welcome">
+    <div class="logo" style="margin:auto;width:54px;height:54px;font-size:27px">F</div>
+    <h1>How can I help you today?</h1>
+    <p>Your AI coding assistant. Chat, explore your GitHub repository and manage project files.</p>
+    <div class="chips">
+      <button class="chip" data-prompt="Show me the files in my GitHub repository">📁 Explore GitHub</button>
+      <button class="chip" data-prompt="Explain my project structure">🧠 Explain project</button>
+      <button class="chip" data-prompt="Help me fix a coding error">🛠 Fix an error</button>
+    </div>
+  </section>
+  <section class="messages" id="messages"></section>
+</main>
+
+<footer class="composer">
+  <form class="inputbox" id="chatForm">
+    <textarea id="prompt" placeholder="Message your AI agent..." rows="1"></textarea>
+    <button id="send" type="submit">↑</button>
+  </form>
+  <div class="note">FlyTripVisa AI · GitHub coding assistant</div>
+</footer>
+
+<script>
+const form=document.getElementById("chatForm");
+const input=document.getElementById("prompt");
+const messages=document.getElementById("messages");
+const welcome=document.getElementById("welcome");
+const send=document.getElementById("send");
+
+function addMessage(text,type){
+  welcome.style.display="none";
+  const div=document.createElement("div");
+  div.className="msg "+type;
+  div.textContent=text;
+  messages.appendChild(div);
+  document.getElementById("main").scrollTop=999999;
+  return div;
+}
+
+async function sendMessage(text){
+  text=text.trim();
+  if(!text)return;
+  addMessage(text,"user");
+  input.value="";
+  send.disabled=true;
+  const reply=addMessage("Connecting to AI agent...","bot");
+
+  try{
+    const response=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text})
+    });
+    if(!response.ok)throw new Error("AI API error: "+response.status);
+    const data=await response.json();
+    reply.textContent=data.reply||data.message||"The AI returned an empty response.";
+  }catch(error){
+    reply.textContent="Connection error: "+error.message+"\nThe chat backend will be connected in the next setup step.";
+  }finally{
+    send.disabled=false;
+    input.focus();
+  }
+}
+
+form.addEventListener("submit",e=>{
+  e.preventDefault();
+  sendMessage(input.value);
+});
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    form.requestSubmit();
+  }
+});
+document.querySelectorAll(".chip").forEach(button=>{
+  button.addEventListener("click",()=>sendMessage(button.dataset.prompt));
+});
+</script>
+</body>
+</html>
