@@ -10,6 +10,10 @@
   "vars": {
     "GITHUB_REPOSITORY": "guolongli1997-spec/flytripvisa-mcp-server"
   },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
   "observability": {
     "enabled": true
   }
