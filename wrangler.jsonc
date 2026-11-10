@@ -12,3 +12,6 @@
 		"enabled": true,
 	},
 }
+"vars": {
+  "GITHUB_REPOSITORY": "guolongli1997-spec/flytripvisa-mcp-server"
+}, 
