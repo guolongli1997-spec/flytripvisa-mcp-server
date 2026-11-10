@@ -1,66 +1,221 @@
+
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
 
-function createServer() {
-	const server = new McpServer({
-		name: "Authless Calculator",
-		version: "1.0.0",
-	});
-
-	server.registerTool(
-		"add",
-		{ inputSchema: z.object({ a: z.number(), b: z.number() }) },
-		async ({ a, b }) => ({
-			content: [{ type: "text", text: String(a + b) }],
-		}),
-	);
-
-	server.registerTool(
-		"calculate",
-		{
-			inputSchema: z.object({
-				operation: z.enum(["add", "subtract", "multiply", "divide"]),
-				a: z.number(),
-				b: z.number(),
-			}),
-		},
-		async ({ operation, a, b }) => {
-			let result: number;
-			switch (operation) {
-				case "add":
-					result = a + b;
-					break;
-				case "subtract":
-					result = a - b;
-					break;
-				case "multiply":
-					result = a * b;
-					break;
-				case "divide":
-					if (b === 0)
-						return {
-							content: [
-								{
-									type: "text",
-									text: "Error: Cannot divide by zero",
-								},
-							],
-						};
-					result = a / b;
-					break;
-			}
-			return { content: [{ type: "text", text: String(result) }] };
-		},
-	);
-
-	return server;
+interface Env {
+  GITHUB_TOKEN: string;
+  MCP_ACCESS_TOKEN: string;
+  GITHUB_REPOSITORY: string;
 }
 
-const handler = createMcpHandler(createServer);
+const API = "https://api.github.com";
+
+async function github(
+  env: Env,
+  path: string,
+  options: RequestInit = {},
+) {
+  const response = await fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+  const data: any = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || `GitHub API error: ${response.status}`);
+  }
+
+  return data;
+}
+
+function encodeBase64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  }
+
+  return btoa(binary);
+}
+
+function decodeBase64(value: string) {
+  const binary = atob(value.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function result(value: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
+  };
+}
+
+function createServer(env: Env) {
+  const server = new McpServer({
+    name: "FlyTripVisa GitHub Agent",
+    version: "1.0.0",
+  });
+
+  const repo = env.GITHUB_REPOSITORY;
+  const branch = "main";
+
+  server.registerTool(
+    "list_files",
+    {
+      description: "List files and folders in the GitHub repository.",
+      inputSchema: z.object({
+        path: z.string().default(""),
+      }),
+    },
+    async ({ path }) => {
+      try {
+        const data = await github(
+          env,
+          `/repos/${repo}/contents/${path}?ref=${branch}`,
+        );
+
+        const files = (Array.isArray(data) ? data : [data]).map((item: any) => ({
+          name: item.name,
+          path: item.path,
+          type: item.type,
+          sha: item.sha,
+        }));
+
+        return result(files);
+      } catch (error) {
+        return {
+          ...result({ error: String(error) }),
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    "read_file",
+    {
+      description: "Read a file from the GitHub repository.",
+      inputSchema: z.object({
+        path: z.string().min(1),
+      }),
+    },
+    async ({ path }) => {
+      try {
+        const data = await github(
+          env,
+          `/repos/${repo}/contents/${path}?ref=${branch}`,
+        );
+
+        if (Array.isArray(data) || data.type !== "file") {
+          throw new Error("The requested path is not a file.");
+        }
+
+        return result({
+          path: data.path,
+          sha: data.sha,
+          content: decodeBase64(data.content),
+        });
+      } catch (error) {
+        return {
+          ...result({ error: String(error) }),
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    "write_file",
+    {
+      description:
+        "Create or update a file in the GitHub repository. Supply sha when updating an existing file.",
+      inputSchema: z.object({
+        path: z.string().min(1),
+        content: z.string(),
+        message: z.string().default("Update file using FlyTripVisa AI"),
+        sha: z.string().optional(),
+      }),
+    },
+    async ({ path, content, message, sha }) => {
+      try {
+        const data = await github(
+          env,
+          `/repos/${repo}/contents/${path}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({
+              message,
+              content: encodeBase64(content),
+              branch,
+              ...(sha ? { sha } : {}),
+            }),
+          },
+        );
+
+        return result({
+          success: true,
+          path,
+          commit: data.commit?.sha,
+          message: "GitHub file saved successfully.",
+        });
+      } catch (error) {
+        return {
+          ...result({ error: String(error) }),
+          isError: true,
+        };
+      }
+    },
+  );
+
+  return server;
+}
 
 export default {
-	fetch(request: Request, env: Env, ctx: ExecutionContext) {
-		return handler(request, env, ctx);
-	},
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/" && request.method === "GET") {
+      return Response.json({
+        name: "FlyTripVisa GitHub MCP Server",
+        status: "online",
+        endpoint: "/mcp",
+      });
+    }
+
+    if (url.pathname !== "/mcp") {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    if (
+      !env.GITHUB_TOKEN ||
+      !env.MCP_ACCESS_TOKEN ||
+      !env.GITHUB_REPOSITORY
+    ) {
+      return Response.json(
+        { error: "Server secrets or repository configuration missing." },
+        { status: 500 },
+      );
+    }
+
+    const authorization = request.headers.get("Authorization");
+
+    if (authorization !== `Bearer ${env.MCP_ACCESS_TOKEN}`) {
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const handler = createMcpHandler(() => createServer(env));
+    return handler(request, env, ctx);
+  },
 } satisfies ExportedHandler<Env>;
