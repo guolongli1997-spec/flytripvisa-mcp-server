@@ -3,66 +3,263 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080b0a">
-<title>FlyTripVisa AI Agent</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08090d">
+<title>Fly Dragon AI | FlyTripVisa</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080b0a;color:#e9f3ed;font-family:Inter,Arial,sans-serif;height:100dvh;display:flex;flex-direction:column}
-header{height:65px;border-bottom:1px solid #1c2b23;display:flex;align-items:center;padding:0 18px;gap:12px}
-.logo{width:37px;height:37px;border-radius:12px;background:#07c160;color:#06130b;display:grid;place-items:center;font-weight:900;font-size:20px}
-.brand{font-size:16px;font-weight:700}
-.status{font-size:11px;color:#07c160;margin-top:4px}
-main{flex:1;overflow:auto;padding:22px 16px}
-.welcome{max-width:650px;margin:12vh auto 30px;text-align:center}
-.welcome h1{font-size:clamp(27px,6vw,42px);margin:12px 0}
-.welcome p{color:#91a69a;line-height:1.6}
-.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:24px}
-.chip{background:#101a14;border:1px solid #26382c;color:#b8cabe;border-radius:20px;padding:10px 14px;cursor:pointer}
-.messages{max-width:760px;margin:auto;display:flex;flex-direction:column;gap:16px}
-.msg{max-width:88%;padding:13px 16px;border-radius:15px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
-.user{align-self:flex-end;background:#075c35;color:white;border-bottom-right-radius:4px}
-.bot{align-self:flex-start;background:#121c16;border:1px solid #26372c;border-bottom-left-radius:4px}
-.composer{padding:12px 14px 18px;border-top:1px solid #1c2b23;background:#090e0b}
-.inputbox{max-width:760px;margin:auto;display:flex;gap:10px;background:#111a14;border:1px solid #2a3b30;border-radius:17px;padding:9px}
-textarea{flex:1;resize:none;max-height:130px;min-height:42px;background:transparent;border:0;outline:0;color:white;padding:11px;font:inherit}
-button{border:0;cursor:pointer}
-#send{width:44px;height:44px;border-radius:13px;background:#07c160;color:#06130b;font-size:20px;font-weight:bold}
-#send:disabled{opacity:.4}
-.note{text-align:center;color:#65786b;font-size:11px;margin-top:10px}
-@media(min-width:700px){main{padding:28px}.composer{padding-bottom:22px}}
+body{
+ margin:0;background:#08090d;color:#f5f5f5;
+ font-family:Inter,Arial,sans-serif;
+}
+button,input,textarea{font:inherit}
+.app{height:100dvh;display:flex;flex-direction:column}
+header{
+ height:52px;min-height:52px;
+ display:flex;align-items:center;justify-content:space-between;
+ padding:0 15px;background:#0d0f15;
+ border-bottom:1px solid #222631;
+}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{font-size:24px}
+.brand-title{font-size:15px;font-weight:700}
+.brand-sub{font-size:10px;color:#9299a7}
+#newChatButton{
+ background:#191d27;color:white;border:1px solid #303644;
+ border-radius:9px;padding:8px 12px;cursor:pointer;
+ font-size:12px;
+}
+#main{
+ flex:1;overflow-y:auto;width:100%;
+ max-width:850px;margin:auto;padding:22px 18px 30px;
+ scroll-behavior:smooth;
+}
+#welcome{text-align:center;margin:13vh auto 35px}
+#welcome h1{font-size:27px;margin-bottom:8px}
+#welcome p{font-size:13px;color:#9299a7}
+.prompts{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;max-width:540px;margin:25px auto;
+}
+.chip{
+ background:#141720;color:#dce0e8;
+ border:1px solid #2a303d;border-radius:12px;
+ padding:13px;text-align:left;cursor:pointer;
+ font-size:12px;
+}
+.chip:hover{border-color:#07c160}
+#messages{display:flex;flex-direction:column;gap:15px}
+.msg{
+ max-width:85%;padding:12px 15px;
+ border-radius:15px;font-size:14px;
+ line-height:1.6;white-space:pre-wrap;
+ overflow-wrap:anywhere;
+}
+.msg.user{
+ align-self:flex-end;background:#173d30;
+ border:1px solid #226b4a;
+}
+.msg.bot{
+ align-self:flex-start;background:#171a23;
+ border:1px solid #292e3a;
+}
+.composer-wrap{
+ width:100%;max-width:850px;
+ margin:0 auto;padding:10px 16px 16px;
+}
+.composer{
+ display:flex;align-items:flex-end;gap:9px;
+ background:#171a23;border:1px solid #343a48;
+ border-radius:17px;padding:9px 10px;
+}
+#messageInput{
+ flex:1;min-width:0;resize:none;
+ max-height:150px;min-height:27px;
+ border:0;outline:0;background:transparent;
+ color:white;padding:7px 2px;
+ font-size:14px;line-height:1.5;
+}
+#messageInput::placeholder{color:#89909d}
+.icon-btn{
+ width:34px;height:34px;flex-shrink:0;
+ border:0;border-radius:10px;
+ background:transparent;color:#c6ccd7;
+ cursor:pointer;font-size:19px;
+}
+#sendButton{
+ background:#07c160;color:#06140c;
+ font-weight:800;font-size:16px;
+}
+#sendButton:disabled{opacity:.4}
+#fileInput{display:none}
+#fileChipContainer{
+ display:flex;gap:6px;flex-wrap:wrap;
+ padding:5px 3px;
+}
+.file-chip{
+ font-size:11px;color:#b8c2d0;
+ background:#222733;padding:5px 9px;
+ border-radius:8px;
+}
+footer{
+ text-align:center;color:#656d7b;
+ font-size:10px;padding:0 10px 8px;
+}
+@media(max-width:600px){
+ header{height:46px;min-height:46px;padding:0 11px}
+ #main{padding:16px 12px 22px}
+ #welcome{margin-top:12vh}
+ #welcome h1{font-size:23px}
+ .composer-wrap{padding:8px 10px 12px}
+ .msg{max-width:91%}
+ .prompts{gap:7px}
+ .chip{padding:11px;font-size:11px}
+}
 </style>
 </head>
+
 <body>
+<div class="app">
+
 <header>
-  <div class="logo">F</div>
+ <div class="brand">
+  <div class="logo">🐉</div>
   <div>
-    <div class="brand">FlyTripVisa AI Agent</div>
-    <div class="status">● AI Agent Interface</div>
+   <div class="brand-title">Fly Dragon AI</div>
+   <div class="brand-sub">by flytripvisa.site</div>
   </div>
+ </div>
+
+ <button id="newChatButton">+ New Chat</button>
 </header>
 
 <main id="main">
-  <section class="welcome" id="welcome">
-    <div class="logo" style="margin:auto;width:54px;height:54px;font-size:27px">F</div>
-    <h1>How can I help you today?</h1>
-    <p>Your AI coding assistant. Chat, explore your GitHub repository and manage project files.</p>
-    <div class="chips">
-      <button class="chip" data-prompt="Show me the files in my GitHub repository">📁 Explore GitHub</button>
-      <button class="chip" data-prompt="Explain my project structure">🧠 Explain project</button>
-      <button class="chip" data-prompt="Help me fix a coding error">🛠 Fix an error</button>
-    </div>
-  </section>
-  <section class="messages" id="messages"></section>
+
+ <section id="welcome">
+  <h1>What can I help you with?</h1>
+  <p>Your personal AI assistant. Ask anything.</p>
+
+  <div class="prompts">
+   <button class="chip" data-prompt="Suggest the best travel destinations for me.">
+    ✈ Travel destinations
+   </button>
+   <button class="chip" data-prompt="Explain Japan visa requirements.">
+    🛂 Japan visa
+   </button>
+   <button class="chip" data-prompt="Help me find flight options.">
+    🛫 Flight assistance
+   </button>
+   <button class="chip" data-prompt="Help me plan a hotel booking.">
+    🏨 Hotel assistance
+   </button>
+  </div>
+ </section>
+
+ <section id="messages"></section>
 </main>
 
-<footer class="composer">
-  <form class="inputbox" id="chatForm">
-    <textarea id="prompt" placeholder="Message your AI agent..." rows="1"></textarea>
-    <button id="send" type="submit">↑</button>
-  </form>
-  <div class="note">FlyTripVisa AI · GitHub coding assistant</div>
+<div class="composer-wrap">
+
+ <div id="fileChipContainer"></div>
+
+ <form id="chatForm" class="composer">
+
+  <button type="button" class="icon-btn" id="fileButton"
+   aria-label="Attach file">＋</button>
+
+  <input type="file" id="fileInput" multiple
+   accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp,.csv,.xlsx">
+
+  <textarea id="messageInput" rows="1"
+   placeholder="Message Fly Dragon AI..."></textarea>
+
+  <button type="button" id="voiceButton"
+   class="icon-btn" aria-label="Voice input">🎙</button>
+
+  <button type="submit" id="sendButton"
+   class="icon-btn" aria-label="Send">↑</button>
+
+ </form>
+</div>
+
+<footer>
+ Fly Dragon AI can make mistakes. Verify important information.
 </footer>
+
+</div>
+
+<script>
+(() => {
+ const input = document.getElementById("messageInput");
+ const fileInput = document.getElementById("fileInput");
+ const fileButton = document.getElementById("fileButton");
+ const fileContainer = document.getElementById("fileChipContainer");
+ const voiceButton = document.getElementById("voiceButton");
+
+ let selectedFiles = [];
+
+ window.getSelectedFiles = () => selectedFiles;
+
+ window.clearSelectedFiles = () => {
+  selectedFiles = [];
+  renderFiles();
+ };
+
+ function renderFiles(){
+  fileContainer.innerHTML = "";
+
+  selectedFiles.forEach((file,index) => {
+   const chip = document.createElement("span");
+   chip.className = "file-chip";
+   chip.textContent = file.name + " ×";
+   chip.title = "Remove file";
+   chip.style.cursor = "pointer";
+
+   chip.onclick = () => {
+    selectedFiles.splice(index,1);
+    renderFiles();
+   };
+
+   fileContainer.appendChild(chip);
+  });
+ }
+
+ fileButton.addEventListener("click", () => fileInput.click());
+
+ fileInput.addEventListener("change", () => {
+  selectedFiles.push(...Array.from(fileInput.files));
+  renderFiles();
+  fileInput.value = "";
+ });
+
+ input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight,150) + "px";
+ });
+
+ if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+  const Recognition = window.SpeechRecognition ||
+   window.webkitSpeechRecognition;
+
+  const recognition = new Recognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+
+  voiceButton.addEventListener("click", () => recognition.start());
+
+  recognition.onresult = (event) => {
+   input.value += event.results[0][0].transcript;
+   input.dispatchEvent(new Event("input"));
+  };
+ } else {
+  voiceButton.addEventListener("click", () => {
+   alert("Voice input is not supported in this browser.");
+  });
+ }
+})();
+</script>
+
 <script src="/chat.js" defer></script>
 </body>
 </html>
