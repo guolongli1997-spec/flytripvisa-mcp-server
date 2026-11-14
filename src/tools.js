@@ -2,7 +2,7 @@
 export function createTools(env, userId) {
   return [
     {
-      name: "get_my_recent_chats",
+      name: "flytripvisa-mcp-server",
       description: "Get the current user's recent chat history.",
       parameters: {
         type: "object",
